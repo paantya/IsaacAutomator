@@ -146,6 +146,12 @@ class GCPDeployer(Deployer):
         super().__init__(params, config)
 
     def main(self):
+        if self.params.get("local"):
+            self.create_ansible_inventory()
+            self.run_all_ansible()
+            self.output_deployment_info()
+            return
+
         # display warning about unsupported options
         if self.params["from_image"]:
             raise click.BadParameter(

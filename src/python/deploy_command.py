@@ -331,6 +331,17 @@ class DeployCommand(click.core.Command):
             ),
         )
 
+        # --local/--no-local
+        self.params.insert(
+            len(self.params),
+            click.core.Option(
+                ("--local/--no-local",),
+                default=False,
+                show_default=False,
+                help="Deploy locally instead of to the cloud.",
+            ),
+        )
+
         # --upload/--no-upload
         self.params.insert(
             len(self.params),

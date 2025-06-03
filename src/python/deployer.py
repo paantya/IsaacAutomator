@@ -50,6 +50,10 @@ class Deployer:
             self.params["in_china"]
         ]
 
+        # ensure local flag exists
+        if "local" not in self.params:
+            self.params["local"] = False
+
         # create state directory if it doesn't exist
         os.makedirs(self.config["state_dir"], exist_ok=True)
 
@@ -232,6 +236,10 @@ class Deployer:
             - run_ansible: keep tfvars/tfstate, don't ask for user input, skip terraform steps
         """
 
+        if self.params.get("local"):
+            # no terraform needed for local deployments
+            return
+
         # default values common for all clouds
         tfvars.update(
             {
@@ -337,6 +345,19 @@ class Deployer:
         # add config
         ansible_vars["config"] = self.config
 
+        # local deployment defaults
+        if self.params.get("local"):
+            ansible_vars.setdefault("isaac_ip", "127.0.0.1")
+            ansible_vars.setdefault("ovami_ip", "127.0.0.1")
+            ansible_vars.setdefault("cloud", "local")
+            ansible_vars["ansible_connection"] = "local"
+            ansible_vars["ansible_key"] = ""
+        else:
+            ansible_vars["ansible_connection"] = "ssh"
+            ansible_vars["ansible_key"] = (
+                f"{self.config['state_dir']}/{deployment_name}/key.pem"
+            )
+
         # get missing values from terraform
         for k in [
             "isaac_ip",
@@ -374,6 +395,9 @@ class Deployer:
         Initialize Terraform via shell command
         cwd: directory where terraform scripts are located
         """
+
+        if self.params.get("local"):
+            return
         debug = self.params["debug"]
 
         shell_command(
@@ -387,6 +411,9 @@ class Deployer:
         Apply Terraform via shell command
         cwd: directory where terraform scripts are located
         """
+
+        if self.params.get("local"):
+            return
 
         debug = self.params["debug"]
         deployment_name = self.params["deployment_name"]
@@ -403,6 +430,9 @@ class Deployer:
         """
         Export SSH key from Terraform state
         """
+
+        if self.params.get("local"):
+            return
 
         debug = self.params["debug"]
         deployment_name = self.params["deployment_name"]
@@ -467,6 +497,9 @@ class Deployer:
         Cache read values in self._tf_outputs.
         """
 
+        if self.params.get("local"):
+            return default
+
         if key not in self.tf_outputs:
             debug = self.params["debug"]
             deployment_name = self.params["deployment_name"]
@@ -496,6 +529,8 @@ class Deployer:
         return self.tf_outputs[key]
 
     def upload_user_data(self):
+        if self.params.get("local"):
+            return
         shell_command(
             f'./upload "{self.params["deployment_name"]}" '
             + f'{"--debug" if self.params["debug"] else ""}',
@@ -507,6 +542,12 @@ class Deployer:
 
     # generate ssh connection command for the user
     def ssh_connection_command(self, ip: str):
+        if self.params.get("local"):
+            r = "ssh localhost"
+            if self.params["ssh_port"] != 22:
+                r += f" -p {self.params['ssh_port']}"
+            return r
+
         r = f"ssh -i state/{self.params['deployment_name']}/key.pem "
         r += f"-o StrictHostKeyChecking=no ubuntu@{ip}"
         if self.params["ssh_port"] != 22:
@@ -553,7 +594,9 @@ class Deployer:
         instructions_file = f"{self.config['state_dir']}/{deployment_name}/info.txt"
         instructions = ""
 
-        if isaac:
+        if self.params.get("local"):
+            instructions += "* Local deployment completed. Isaac Sim is available on this machine.\n"
+        elif isaac:
             instructions += f"""{'*' * (29+len(self.tf_output('isaac_ip')))}
 * Isaac Sim is deployed at {self.tf_output('isaac_ip')} *
 {'*' * (29+len(self.tf_output('isaac_ip')))}

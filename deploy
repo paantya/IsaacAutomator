@@ -1,0 +1,62 @@
+#!/usr/bin/env python3
+
+# region copyright
+# Copyright 2023 NVIDIA Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# endregion
+
+import os
+import sys
+import click
+
+from src.python.utils import shell_command, colorize_error
+
+
+@click.command(context_settings={"ignore_unknown_options": True, "allow_extra_args": True})
+@click.option(
+    "--cloud",
+    type=click.Choice(["gcp", "aws", "azure", "alicloud"]),
+    default="gcp",
+    show_default=True,
+    help="Target cloud provider",
+)
+@click.option(
+    "--net",
+    "--network",
+    default=None,
+    help="Pass network mode to ./run (e.g. host)",
+)
+@click.pass_context
+def main(ctx, cloud, net):
+    script = os.path.join(os.path.dirname(__file__), f"deploy-{cloud}")
+    if not os.path.exists(script):
+        click.echo(colorize_error(f"Unknown cloud provider: {cloud}"), err=True)
+        sys.exit(1)
+
+    cmd = [script] + ctx.args
+
+    if os.path.exists("/.dockerenv"):
+        os.execv(cmd[0], cmd)
+    else:
+        if net:
+            net_arg = f"--net={net} "
+        elif "--local" in ctx.args:
+            net_arg = "--net=host "
+        else:
+            net_arg = ""
+        shell_command(f"./run {net_arg}'{' '.join(cmd)}'", verbose=True)
+
+
+if __name__ == "__main__":
+    main()
