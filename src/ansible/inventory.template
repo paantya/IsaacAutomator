@@ -5,6 +5,7 @@ cloud="{cloud}"
 in_china={in_china}
 ssh_port={ssh_port}
 ansible_user="ubuntu"
+ansible_connection="{ansible_connection}"
 ngc_api_key="{ngc_api_key}"
 isaac_image="{isaac_image}"
 vnc_password="{vnc_password}"
@@ -20,7 +21,7 @@ uploads_dir="{config[default_remote_uploads_dir]}"
 results_dir="{config[default_remote_results_dir]}"
 workspace_dir="{config[default_remote_workspace_dir]}"
 generic_driver_apt_package="{config[generic_driver_apt_package]}"
-ansible_ssh_private_key_file="{config[state_dir]}/{deployment_name}/key.pem"
+ansible_ssh_private_key_file="{ansible_key}"
 
 [targets:children]
 isaac

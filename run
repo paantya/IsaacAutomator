@@ -8,4 +8,10 @@ if [[ $(docker images -q "$TAG" 2> /dev/null) == '' ]]; then
   "${SELF_DIR}/build"
 fi
 
-docker run --platform linux/x86_64 -it --rm -v "${SELF_DIR}":/app $TAG "${*:-bash}"
+NET_ARG=""
+if [[ "$1" == "--net=host" || "$1" == "--network=host" ]]; then
+  NET_ARG="--net=host"
+  shift
+fi
+
+docker run --platform linux/x86_64 -it --rm ${NET_ARG} -v "${SELF_DIR}":/app $TAG "${@:-bash}"

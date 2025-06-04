@@ -55,6 +55,13 @@ Please enter the following command in the project root directory to build the co
 ./build
 ```
 
+If the build needs direct network access (for example, to reach services on the
+host), you can pass additional Docker options:
+
+```sh
+./build --network=host
+```
+
 #### Windows
 
 ```sh
@@ -85,6 +92,23 @@ On Linux and MacOS there are two ways to run the automator commands:
 ```sh
 ./run ./somecommand <parameters>
 ```
+
+If you need the container to share the host network (useful for local
+deployments), pass `--net=host`:
+
+```sh
+./run --net=host ./somecommand
+```
+
+You can also provide this option directly to `./deploy` when starting a
+deployment from the host:
+
+```sh
+./deploy --net=host --cloud gcp
+```
+
+Host networking only matters when launching the container. Commands run inside
+the already running container don't use this flag.
 
 for example:
 
@@ -162,10 +186,10 @@ Then set the `aws_access_key_id`, `aws_secret_key` and `aws_session_token` varia
 # enter the automator container
 ./run
 # inside container:
-./deploy-gcp
+./deploy --cloud gcp
 ```
 
-Tip: Run `./deploy-gcp --help` to see more options.
+Tip: Run `./deploy-gcp --help` to see more provider-specific options.
 
 #### Azure
 
@@ -175,7 +199,7 @@ If You Have Single Subscription:
 # enter the automator container
 ./run
 # inside container:
-./deploy-azure
+./deploy --cloud azure
 ```
 
 If You Have Multiple Subscriptions:
@@ -191,7 +215,26 @@ az account set --subscription "<subscription_name>"
 ./deploy-azure --no-login
 ```
 
-Tip: Run `./deploy-azure --help` to see more options.
+Tip: Run `./deploy-azure --help` to see more provider-specific options.
+
+#### Local Deployment
+
+You can run the Automator scripts locally without provisioning any cloud
+resources. Use the generic `deploy` command with the `--local` flag. When
+launched from the host this automatically starts the container with host
+networking so that services inside the container can reach your local
+machine:
+
+```sh
+# outside container:
+./deploy --local
+```
+
+If you are already inside the container, make sure it was started with
+`./run --net=host` before running `./deploy --local`.
+
+By default this behaves like the GCP deployment. You can choose a different
+provider with the `--cloud` option, for example `./deploy --cloud azure --local`.
 
 #### Alibaba Cloud
 

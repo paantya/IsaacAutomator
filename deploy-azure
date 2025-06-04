@@ -165,6 +165,13 @@ class AzureDeployer(Deployer):
         )
 
     def main(self):
+        if self.params.get("local"):
+            # local deployment: no cloud operations
+            self.create_ansible_inventory()
+            self.run_all_ansible()
+            self.output_deployment_info()
+            return
+
         # ask what to do if deployment already exists
         self.ask_existing_behavior()
 
